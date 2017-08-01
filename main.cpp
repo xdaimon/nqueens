@@ -39,18 +39,36 @@ so
 win if 0 == Sum(Max(Conv(board, kernel) - N * ones_matrix, 0))
 */
 
-int queen_kills(int q, int* queens) {
+int queen_kills(int q, int* queens, std::vector<int>* kill_list) {
 	int kills = 0;
 	const int x = q;
 	const int y = queens[q];
-	for (int qq = 0; qq < N && kills < N/4; ++qq) {
+	for (int qq = 0; qq < N && kills < N/8; ++qq) {
 		if (qq == q)
 			continue;
 		const int xx = qq;
 		const int yy = queens[qq];
-		if (yy == y) // in column
+		if (yy == y || abs(x-xx) == abs(y-yy)) { // in column or diagonal
 			kills++;
-		else if (abs(x-xx) == abs(y-yy)) // on a diagonal
+			// add qq to kill list of q
+			// and q to kill list of qq
+			kill_list[q].push_back(qq);
+			kill_list[qq].push_back(q);
+		}
+	}
+	return kills;
+}
+
+int queen_kills(int q, int* queens) {
+	int kills = 0;
+	const int x = q;
+	const int y = queens[q];
+	for (int qq = 0; qq < N && kills < N/8; ++qq) {
+		if (qq == q)
+			continue;
+		const int xx = qq;
+		const int yy = queens[qq];
+		if (yy == y || abs(x-xx) == abs(y-yy)) // in column or diagonal
 			kills++;
 	}
 	return kills;
@@ -69,6 +87,13 @@ int main() {
 	int queens[N];
 	for (int i = 0; i < N; ++i)
 		queens[i] = dist(eng);
+
+	// Kill list allows the code to execute roughly twice as fast :)
+	// Which seems to agree with how many loops we have to compute
+	// Compute queen kill list
+	std::vector<int> kill_list[N];
+	for (int i = 0; i < N; ++i)
+		queen_kills(i, queens, kill_list);
 
 	// print_board(queens);
 
@@ -93,17 +118,36 @@ int main() {
 				num_min_columns++;
 			}
 		}
+
+		// Rearrange the kill list
+		std::vector<int>& qkl = kill_list[q];
+		for (size_t i = 0; i < qkl.size(); ++i) {
+			std::vector<int>& qqkl = kill_list[qkl[i]];
+			for (size_t j = 0; j < qqkl.size(); ++j) {
+				if (qqkl[j] == q) {
+					qqkl.erase(qqkl.begin()+j);
+					break;
+				}
+			}
+		}
+		qkl.clear();
+
 		// Place queen at a position that allows a minimum number of kills
 		queens[q] = min_column[dist(eng) % num_min_columns];
+		queen_kills(q, queens, kill_list);
+
 		kill_sum = 0;
 		for (int i = 0; i < N; ++i)
-			kill_sum += queen_kills(i,queens);
+			kill_sum += kill_list[i].size();
 		iterations++;
 	} while (kill_sum != 0);
 
 	// loops per game win check
-	// current solution
+	// previous solution
 	//    2N^2
+	// current solution
+	//    N^2 + N roughly (the maximum is 2N^2 I think, but this would only happen
+	//                     if all queens were in the same row)
 	// conv solution
 	//    N^3 + ... ha, too inefficient and essentially captured by the current impl, but
 	//              it's nice to know that a conv net probably could learn the queen_kills
