@@ -3,7 +3,7 @@
 using std::cout;
 using std::endl;
 
-static const int N = 20;
+static const int N = 1000;
 
 void print_board(int* queens) {
 	int board[N*N] = {};
@@ -50,13 +50,13 @@ int queen_kills(int q, int* queens) {
 		const int yy = queens[qq];
 		if (yy == y) // in column
 			kills++;
-		else if (fabs((x-xx)/float(y-yy)) == 1.f) // on a diagonal
+		else if (abs(x-xx) == abs(y-yy)) // on a diagonal
 			kills++;
 	}
 	return kills;
 }
 
-// Genetic approach.
+// Genetic approach? quick brain dump
 // Use a NN (conv NN ?) to multiply the board or the queens vector by to produce the action.
 // add noise to this NN's weights to help to prevent getting stuck in a local minimum?
 // or add noise to the output actions instead of weights?
@@ -76,40 +76,42 @@ int main() {
 	int iterations = 0;
 	int kill_sum = 0;
 	do {
-		kill_sum = 0;
-		for (int q = 0; q < N; ++q) {
-			// Find positions that give the minimum kill count
-			int min_kills = std::numeric_limits<int>::max();
-			int num_min_columns = 0;
-			int kills;
-			for (int col = 0; col < N; ++col) {
-				kills = 0;
-				queens[q] = col;
-				kills = queen_kills(q, queens);
-				if (kills <= min_kills) {
-					if (kills != min_kills)
-						num_min_columns = 0;
-					min_kills = kills;
-					min_column[num_min_columns] = col;
-					num_min_columns++;
-				}
+		// Find positions that give the minimum kill count
+		int q = iterations%N;
+		int min_kills = std::numeric_limits<int>::max();
+		int num_min_columns = 0;
+		int kills;
+		for (int col = 0; col < N; ++col) {
+			kills = 0;
+			queens[q] = col;
+			kills = queen_kills(q, queens);
+			if (kills <= min_kills) {
+				if (kills != min_kills)
+					num_min_columns = 0;
+				min_kills = kills;
+				min_column[num_min_columns] = col;
+				num_min_columns++;
 			}
-			// Place queen at a position that allows a minimum number of kills
-			queens[q] = min_column[dist(eng) % num_min_columns];
-			kill_sum += min_kills;
-			iterations++;
 		}
+		// Place queen at a position that allows a minimum number of kills
+		queens[q] = min_column[dist(eng) % num_min_columns];
+		kill_sum = 0;
+		for (int i = 0; i < N; ++i)
+			kill_sum += queen_kills(i,queens);
+		iterations++;
 	} while (kill_sum != 0);
 
 	// loops per game win check
-	// first solution
-	//    about 1000 * 1000 * 1000
-	// second solution
-	//    nxnMult * n + nSum + nSub + nMax
+	// current solution
+	//    2N^2
+	// conv solution
+	//    N^3 + ... ha, too inefficient and essentially captured by the current impl, but
+	//              it's nice to know that a conv net probably could learn the queen_kills
+	//              function
 
 	cout << iterations << endl;
 
-	print_board(queens);
+	// print_board(queens);
 
 	return 0;
 }
