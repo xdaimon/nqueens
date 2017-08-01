@@ -1,26 +1,10 @@
 #include <iostream>
+#include <vector>
 #include <random>
-using std::cout;
-using std::endl;
+
+// g++ -std=c++11 -O3 main.cpp -o main
 
 static const int N = 1000;
-
-void print_board(int* queens) {
-	int board[N*N] = {};
-	for (int q = 0; q < N; ++q)
-		board[q * N + queens[q]] = 1;
-	cout << endl;
-	for (int i = 0; i < N; ++i) {
-		for (int j = 0; j < N; ++j) {
-			if (board[i*N+j])
-				cout << "o";
-			else
-				cout << ".";
-		}
-		cout << endl;
-	}
-	cout << endl;
-}
 
 /*
 Could use a zero padded convolution with the kernel:
@@ -43,12 +27,12 @@ int queen_kills(int q, int* queens, std::vector<int>* kill_list) {
 	int kills = 0;
 	const int x = q;
 	const int y = queens[q];
-	for (int qq = 0; qq < N && kills < N/8; ++qq) {
+	for (int qq = 0; qq < N; ++qq) {
 		if (qq == q)
 			continue;
 		const int xx = qq;
 		const int yy = queens[qq];
-		if (yy == y || abs(x-xx) == abs(y-yy)) { // in column or diagonal
+		if (yy == y || abs(x-xx) == abs(y-yy)) { // if in column else if in diagonal
 			kills++;
 			// add qq to kill list of q
 			// and q to kill list of qq
@@ -63,12 +47,12 @@ int queen_kills(int q, int* queens) {
 	int kills = 0;
 	const int x = q;
 	const int y = queens[q];
-	for (int qq = 0; qq < N && kills < N/8; ++qq) {
+	for (int qq = 0; qq < N; ++qq) {
 		if (qq == q)
 			continue;
 		const int xx = qq;
 		const int yy = queens[qq];
-		if (yy == y || abs(x-xx) == abs(y-yy)) // in column or diagonal
+		if (yy == y || abs(x-xx) == abs(y-yy)) // if in column else if in diagonal
 			kills++;
 	}
 	return kills;
@@ -81,28 +65,26 @@ int queen_kills(int q, int* queens) {
 
 int main() {
 
+	// Setup random numbers in range [0, N-1]
 	auto eng = std::default_random_engine(12345);
 	auto dist = std::uniform_int_distribution<int>(0, N-1);
 
+	// Initialize queens
 	int queens[N];
-	for (int i = 0; i < N; ++i)
-		queens[i] = dist(eng);
+	for (int& q : queens)
+		q = dist(eng);
 
-	// Kill list allows the code to execute roughly twice as fast :)
-	// Which seems to agree with how many loops we have to compute
 	// Compute queen kill list
 	std::vector<int> kill_list[N];
-	for (int i = 0; i < N; ++i)
-		queen_kills(i, queens, kill_list);
-
-	// print_board(queens);
+	for (int& q : queens)
+		queen_kills(q, queens, kill_list);
 
 	int min_column[N];
 	int iterations = 0;
-	int kill_sum = 0;
+	int kill_sum;
 	do {
-		// Find positions that give the minimum kill count
-		int q = iterations%N;
+		// Find column positions that give the minimum kill count for the qth queen
+		int q = iterations % N;
 		int min_kills = std::numeric_limits<int>::max();
 		int num_min_columns = 0;
 		int kills;
@@ -119,7 +101,7 @@ int main() {
 			}
 		}
 
-		// Rearrange the kill list
+		// Remove q from any kill lists
 		std::vector<int>& qkl = kill_list[q];
 		for (size_t i = 0; i < qkl.size(); ++i) {
 			std::vector<int>& qqkl = kill_list[qkl[i]];
@@ -134,15 +116,18 @@ int main() {
 
 		// Place queen at a position that allows a minimum number of kills
 		queens[q] = min_column[dist(eng) % num_min_columns];
+
+		// Add q to kill list of queens who can kill q
 		queen_kills(q, queens, kill_list);
 
 		kill_sum = 0;
-		for (int i = 0; i < N; ++i)
-			kill_sum += kill_list[i].size();
+		for (auto& v : kill_list)
+			kill_sum += v.size();
 		iterations++;
 	} while (kill_sum != 0);
 
-	// loops per game win check
+	// The kill list allows the code to execute roughly two times faster than previous solution :)
+	// loops per iteration
 	// previous solution
 	//    2N^2
 	// current solution
@@ -153,9 +138,7 @@ int main() {
 	//              it's nice to know that a conv net probably could learn the queen_kills
 	//              function
 
-	cout << iterations << endl;
-
-	// print_board(queens);
+	std::cout << iterations << std::endl;
 
 	return 0;
 }
