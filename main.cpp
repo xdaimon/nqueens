@@ -4,7 +4,7 @@
 
 // g++ -std=c++11 -O3 main.cpp -o main
 
-static const int N = 1000;
+static const int N = 8;
 
 /*
 Could use a zero padded convolution with the kernel:
