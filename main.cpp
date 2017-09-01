@@ -75,6 +75,7 @@ int main() {
 		q = dist(eng);
 
 	// Compute queen kill list
+	// i.e. what queens can the nth queen strike?
 	std::vector<int> kill_list[N];
 	for (int& q : queens)
 		queen_kills(q, queens, kill_list);
@@ -83,8 +84,10 @@ int main() {
 	int iterations = 0;
 	int kill_sum;
 	do {
-		// Find column positions that give the minimum kill count for the qth queen
+		// Choose the qth queen
 		int q = iterations % N;
+
+		// Find column positions that give the minimum kill count for the qth queen
 		int min_kills = std::numeric_limits<int>::max();
 		int num_min_columns = 0;
 		int kills;
@@ -101,28 +104,33 @@ int main() {
 			}
 		}
 
-		// Remove q from any kill lists
-		std::vector<int>& qkl = kill_list[q];
-		for (size_t i = 0; i < qkl.size(); ++i) {
-			std::vector<int>& qqkl = kill_list[qkl[i]];
-			for (size_t j = 0; j < qqkl.size(); ++j) {
-				if (qqkl[j] == q) {
-					qqkl.erase(qqkl.begin()+j);
-					break;
+		// Move queen and make sure the kill lists are correct
+		{
+			// Remove q from any kill lists
+			std::vector<int>& qkl = kill_list[q];
+			for (size_t i = 0; i < qkl.size(); ++i) {
+				std::vector<int>& qqkl = kill_list[qkl[i]];
+				for (size_t j = 0; j < qqkl.size(); ++j) {
+					if (qqkl[j] == q) {
+						qqkl.erase(qqkl.begin()+j);
+						break;
+					}
 				}
 			}
+			qkl.clear();
+			// Place queen at a position that allows a minimum number of kills
+			queens[q] = min_column[dist(eng) % num_min_columns];
+			// Add q to kill list of queens who can kill q
+			queen_kills(q, queens, kill_list);
 		}
-		qkl.clear();
 
-		// Place queen at a position that allows a minimum number of kills
-		queens[q] = min_column[dist(eng) % num_min_columns];
+		// Let's check the end game condition
+		{
+			kill_sum = 0;
+			for (auto& v : kill_list)
+				kill_sum += v.size();
+		}
 
-		// Add q to kill list of queens who can kill q
-		queen_kills(q, queens, kill_list);
-
-		kill_sum = 0;
-		for (auto& v : kill_list)
-			kill_sum += v.size();
 		iterations++;
 	} while (kill_sum != 0);
 
@@ -132,7 +140,7 @@ int main() {
 	//    2N^2
 	// current solution
 	//    N^2 + N roughly (the maximum is 2N^2 I think, but this would only happen
-	//                     if all queens were in the same row)
+	//                     if all queens were in the same row?)
 	// conv solution
 	//    N^3 + ... ha, too inefficient and essentially captured by the current impl, but
 	//              it's nice to know that a conv net probably could learn the queen_kills
