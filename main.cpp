@@ -24,6 +24,10 @@ win if 0 == Sum(Max(Conv(board, kernel) - N * ones_matrix, 0))
 */
 
 int queen_kills(int q, int* queens, std::vector<int>* kill_list) {
+	// q,         the index of a queen in the queens array, the queen id, represents the row of the queen on the board
+	// queens,    the array of queen column positions, length = N
+	// kill_list, an array of N lists of queens. The nth list holds the queen ids that the nth queen can kill
+
 	int kills = 0;
 	const int x = q;
 	const int y = queens[q];
@@ -32,7 +36,8 @@ int queen_kills(int q, int* queens, std::vector<int>* kill_list) {
 			continue;
 		const int xx = qq;
 		const int yy = queens[qq];
-		if (yy == y || abs(x-xx) == abs(y-yy)) { // if in column else if in diagonal
+		// Check if qq and q are in the same column or if qq and q are in the same diagonal
+		if (yy == y || abs(x-xx) == abs(y-yy)) {
 			kills++;
 			// add qq to kill list of q
 			// and q to kill list of qq
