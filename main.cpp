@@ -27,6 +27,8 @@ int queen_kills(int q, int* queens, std::vector<int>* kill_list) {
 	// q,         the index of a queen in the queens array, the queen id, represents the row of the queen on the board
 	// queens,    the queens array, the array of queen column positions, length = N
 	// kill_list, an array of N lists of queen ids. The nth list holds the queen ids that the nth queen can kill
+	//
+	// returns the number of queens that queen q can strike
 
 	int kills = 0;
 	const int x = q;
@@ -49,6 +51,11 @@ int queen_kills(int q, int* queens, std::vector<int>* kill_list) {
 }
 
 int queen_kills(int q, int* queens) {
+	// q,         the index of a queen in the queens array, the queen id, represents the row of the queen on the board
+	// queens,    the queens array, the array of queen column positions, length = N
+	//
+	// returns the number of queens that queen q can strike
+
 	int kills = 0;
 	const int x = q;
 	const int y = queens[q];
@@ -93,6 +100,7 @@ int main() {
 		int q = iterations % N;
 
 		// Find column positions that give the minimum kill count for the qth queen
+		// If there are multiple positions that give a minimum, then choose one at random
 		int min_kills = std::numeric_limits<int>::max();
 		int num_min_columns = 0;
 		int kills;
@@ -129,7 +137,7 @@ int main() {
 			queen_kills(q, queens, kill_list);
 		}
 
-		// Let's check the end game condition
+		// Compute the end game condition
 		{
 			kill_sum = 0;
 			for (auto& v : kill_list)
